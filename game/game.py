@@ -15,18 +15,13 @@ class Game:
         self.ai.draw_initial_hand()
         self.turn = "player"  # "player" or "ai"
         self.difficulty = 1  # Starting difficulty
+        self.selected_card = None  # To track selected card
 
     def run(self):
         while self.running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                elif event.type == pygame.KEYDOWN:
-                    if self.turn == "player" and event.key == pygame.K_SPACE:
-                        self.player_turn()
-
+            self.handle_events()
             self.screen.fill((255, 255, 255))
-            self.draw_hands()
+            self.draw_ui()
             pygame.display.flip()
             self.clock.tick(30)
 
@@ -35,11 +30,26 @@ class Game:
 
             self.check_game_over()
 
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and self.turn == "player":
+                self.handle_mouse_event(event)
+
+    def handle_mouse_event(self, event):
+        for i, card in enumerate(self.player.hand):
+            card_rect = pygame.Rect(50, 400 + i * 40, 200, 30)
+            if card_rect.collidepoint(event.pos):
+                self.selected_card = i
+                self.player_turn()
+
     def player_turn(self):
-        if self.player.hand:
-            card = self.player.play_card(0)
+        if self.selected_card is not None:
+            card = self.player.play_card(self.selected_card)
             self.resolve_combat(card, self.ai)
             self.turn = "ai"
+            self.selected_card = None
 
     def ai_turn(self):
         if self.ai.hand:
@@ -52,15 +62,18 @@ class Game:
         if opponent.health < 0:
             opponent.health = 0
 
-    def draw_hands(self):
+    def draw_ui(self):
         font = pygame.font.Font(None, 36)
+
         for i, card in enumerate(self.player.hand):
             text = font.render(str(card), True, (0, 0, 0))
-            self.screen.blit(text, (50, 50 + i * 30))
+            card_rect = pygame.Rect(50, 400 + i * 40, 200, 30)
+            pygame.draw.rect(self.screen, (200, 200, 200), card_rect)
+            self.screen.blit(text, (50, 400 + i * 40))
 
         for i, card in enumerate(self.ai.hand):
             text = font.render(str(card), True, (0, 0, 0))
-            self.screen.blit(text, (450, 50 + i * 30))
+            self.screen.blit(text, (450, 50 + i * 40))
 
         player_health_text = font.render(f"Player Health: {self.player.health}", True, (0, 0, 0))
         ai_health_text = font.render(f"AI Health: {self.ai.health}", True, (0, 0, 0))
@@ -77,8 +90,6 @@ class Game:
             self.ai = Player("AI", 20 + self.difficulty * 5)
             self.ai.deck = Deck(difficulty=self.difficulty)
             self.ai.draw_initial_hand()
-
-            # Optionally, restore some player health or give rewards
             self.player.health = min(self.player.health + 5, 20)
             self.player.deck = Deck()
             self.player.draw_initial_hand()
