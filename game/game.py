@@ -18,7 +18,13 @@ class Game:
         self.buff = None
         self.buff_rounds_left = 0
         self.draft_cards()
+        self.load_assets()
     
+    def load_assets(self):
+        self.card_back = pygame.image.load('assets/card_back.png')
+        self.player_icon = pygame.image.load('assets/player_icon.png')
+        self.ai_icon = pygame.image.load('assets/ai_icon.png')
+
     def draft_cards(self):
         self.player.deck = Deck()
         self.ai.deck = Deck(difficulty=self.difficulty)
@@ -110,6 +116,10 @@ class Game:
 
     def draw_ui(self):
         font = pygame.font.Font(None, 36)
+        
+        # Draw the player and AI icons
+        self.screen.blit(self.player_icon, (10, 10))
+        self.screen.blit(self.ai_icon, (710, 10))
 
         for i, card in enumerate(self.player.hand):
             text = font.render(str(card), True, (0, 0, 0))
