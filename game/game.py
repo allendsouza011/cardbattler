@@ -1,8 +1,7 @@
 import pygame
 import random
-from game.player import Player
-from game.deck import Deck
-from game.card import Card
+from .player import Player
+from .deck import Deck
 
 class Game:
     def __init__(self, screen):
@@ -17,13 +16,12 @@ class Game:
         self.round = 1
         self.buff = None
         self.buff_rounds_left = 0
+        self.score = 0
         self.draft_cards()
         self.load_assets()
     
     def load_assets(self):
         self.card_back = pygame.image.load('assets/card_back.png')
-        self.player_icon = pygame.image.load('assets/player_icon.png')
-        self.ai_icon = pygame.image.load('assets/ai_icon.png')
 
     def draft_cards(self):
         self.player.deck = Deck()
@@ -43,13 +41,11 @@ class Game:
             self.screen.blit(draft_text, (300, 10))
 
             for i, card in enumerate(draft_pool):
-                text = font.render(str(card), True, (0, 0, 0))
-                card_rect = pygame.Rect(50, 50 + i * 40, 700, 30)
-                pygame.draw.rect(self.screen, (200, 200, 200), card_rect)
-                self.screen.blit(text, (50, 50 + i * 40))
-                if selected_cards == 5:
-                    selecting = False
-                    break
+                if card:  # Ensure the card is not None
+                    text = font.render(str(card), True, (0, 0, 0))
+                    card_rect = pygame.Rect(50, 50 + i * 40, 700, 30)
+                    pygame.draw.rect(self.screen, (200, 200, 200), card_rect)
+                    self.screen.blit(text, (50, 50 + i * 40))
 
             pygame.display.flip()
             for event in pygame.event.get():
@@ -63,9 +59,12 @@ class Game:
                             self.player.hand.append(card)
                             draft_pool[i] = None
                             selected_cards += 1
+                            if selected_cards == 5:
+                                selecting = False
                             break
 
     def run(self):
+        pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         while self.running:
             self.handle_events()
             self.screen.fill((255, 255, 255))
@@ -87,7 +86,7 @@ class Game:
 
     def handle_mouse_event(self, event):
         for i, card in enumerate(self.player.hand):
-            card_rect = pygame.Rect(50, 400 + i * 40, 200, 30)
+            card_rect = pygame.Rect(50 + i * 100, self.screen.get_height() - 100, 80, 120)
             if card_rect.collidepoint(event.pos):
                 self.selected_card = i
                 self.player_turn()
@@ -95,9 +94,8 @@ class Game:
     def player_turn(self):
         if self.selected_card is not None:
             card = self.player.play_card(self.selected_card)
-            if card and self.player.mana >= card.attack:
+            if card:
                 self.resolve_combat(card, self.ai)
-                self.player.mana -= card.attack
                 self.turn = "ai"
             self.selected_card = None
 
@@ -117,26 +115,26 @@ class Game:
     def draw_ui(self):
         font = pygame.font.Font(None, 36)
         
-        # Draw the player and AI icons
-        self.screen.blit(self.player_icon, (10, 10))
-        self.screen.blit(self.ai_icon, (710, 10))
+        # Draw health bars
+        pygame.draw.rect(self.screen, (255, 0, 0), pygame.Rect(50, 50, self.player.health * 10, 20))
+        pygame.draw.rect(self.screen, (255, 0, 0), pygame.Rect(650, 50, self.ai.health * 10, 20))
 
         for i, card in enumerate(self.player.hand):
             text = font.render(str(card), True, (0, 0, 0))
-            card_rect = pygame.Rect(50, 400 + i * 40, 200, 30)
+            card_rect = pygame.Rect(50 + i * 100, self.screen.get_height() - 100, 80, 120)
             pygame.draw.rect(self.screen, (200, 200, 200), card_rect)
-            self.screen.blit(text, (50, 400 + i * 40))
+            self.screen.blit(text, (50 + i * 100, self.screen.get_height() - 100))
 
-        for i, card in enumerate(self.ai.hand):
-            text = font.render(str(card), True, (0, 0, 0))
-            self.screen.blit(text, (450, 50 + i * 40))
+        for i in range(len(self.ai.hand)):
+            card_rect = pygame.Rect(50 + i * 100, 200, 80, 120)
+            self.screen.blit(self.card_back, card_rect)
 
         player_health_text = font.render(f"Player Health: {self.player.health}", True, (0, 0, 0))
         ai_health_text = font.render(f"AI Health: {self.ai.health}", True, (0, 0, 0))
-        player_mana_text = font.render(f"Player Mana: {self.player.mana}/{self.player.max_mana}", True, (0, 0, 0))
+        score_text = font.render(f"Score: {self.score}", True, (0, 0, 0))
         self.screen.blit(player_health_text, (50, 10))
-        self.screen.blit(ai_health_text, (450, 10))
-        self.screen.blit(player_mana_text, (50, 50))
+        self.screen.blit(ai_health_text, (650, 10))
+        self.screen.blit(score_text, (350, 10))
 
     def check_game_over(self):
         if self.player.health == 0:
@@ -144,6 +142,7 @@ class Game:
             self.running = False
         elif self.ai.health == 0:
             print("Player wins!")
+            self.score += 1
             self.round += 1
             if self.round % 2 == 0:
                 self.apply_buff()
@@ -155,18 +154,17 @@ class Game:
             self.player.deck = Deck()
             self.draft_cards()
             self.turn = "player"
-            self.player.regenerate_mana()
 
     def apply_buff(self):
         buffs = ["common", "rare", "epic"]
         buff = random.choice(buffs)
         if buff == "common":
             self.buff_rounds_left = 1
-            self.player.max_mana += 1
+            self.player.health += 5
         elif buff == "rare":
             self.buff_rounds_left = 2
-            self.player.health += 5
+            self.player.health += 10
         elif buff == "epic":
             self.buff_rounds_left = 3
-            self.player.health += 10
+            self.player.health += 15
         print(f"Player received a {buff} buff for {self.buff_rounds_left} rounds.")
