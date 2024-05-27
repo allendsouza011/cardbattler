@@ -112,29 +112,29 @@ class Game:
         if opponent.health < 0:
             opponent.health = 0
 
-    def draw_ui(self):
-        font = pygame.font.Font(None, 36)
-        
-        # Draw health bars
-        pygame.draw.rect(self.screen, (255, 0, 0), pygame.Rect(50, 50, self.player.health * 10, 20))
-        pygame.draw.rect(self.screen, (255, 0, 0), pygame.Rect(650, 50, self.ai.health * 10, 20))
+def draw_ui(self):
+    font = pygame.font.Font(None, 36)
+    
+    # Draw health bars
+    player_health_text = font.render(f"Player Health: {self.player.health}", True, (0, 0, 0))
+    ai_health_text = font.render(f"AI Health: {self.ai.health}", True, (0, 0, 0))
+    score_text = font.render(f"Score: {self.score}", True, (0, 0, 0))
+    self.screen.blit(player_health_text, (50, self.screen.get_height() // 2 - 50))
+    self.screen.blit(ai_health_text, (650, self.screen.get_height() // 2 - 50))
+    self.screen.blit(score_text, (350, self.screen.get_height() // 2 - 50))
 
-        for i, card in enumerate(self.player.hand):
-            text = font.render(str(card), True, (0, 0, 0))
-            card_rect = pygame.Rect(50 + i * 100, self.screen.get_height() - 100, 80, 120)
-            pygame.draw.rect(self.screen, (200, 200, 200), card_rect)
-            self.screen.blit(text, (50 + i * 100, self.screen.get_height() - 100))
+    # Draw player's cards at the bottom
+    for i, card in enumerate(self.player.hand):
+        text = font.render(f"{card.name} (ATK: {card.attack}, DEF: {card.defense}, ABILITY: {card.ability})", True, (0, 0, 0))
+        card_rect = pygame.Rect(50 + i * 100, self.screen.get_height() - 150, 200, 30)
+        pygame.draw.rect(self.screen, (200, 200, 200), card_rect)
+        self.screen.blit(text, (50 + i * 100, self.screen.get_height() - 150))
 
-        for i in range(len(self.ai.hand)):
-            card_rect = pygame.Rect(50 + i * 100, 200, 80, 120)
-            self.screen.blit(self.card_back, card_rect)
+    # Draw AI's card backs at the top
+    for i in range(len(self.ai.hand)):
+        card_rect = pygame.Rect(50 + i * 100, 50, 80, 120)
+        self.screen.blit(self.card_back, card_rect)
 
-        player_health_text = font.render(f"Player Health: {self.player.health}", True, (0, 0, 0))
-        ai_health_text = font.render(f"AI Health: {self.ai.health}", True, (0, 0, 0))
-        score_text = font.render(f"Score: {self.score}", True, (0, 0, 0))
-        self.screen.blit(player_health_text, (50, 10))
-        self.screen.blit(ai_health_text, (650, 10))
-        self.screen.blit(score_text, (350, 10))
 
     def check_game_over(self):
         if self.player.health == 0:

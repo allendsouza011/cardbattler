@@ -1,7 +1,8 @@
 class Card:
-    def __init__(self, name, attack, ability=None):
+    def __init__(self, name, attack, defense, ability=None):
         self.name = name
         self.attack = attack
+        self.defense = defense
         self.ability = ability
     
     def apply_ability(self, opponent, player):
@@ -11,7 +12,6 @@ class Card:
             opponent.health -= 5
         elif self.ability == "boost":
             player.health += 3
-            opponent.health -= 3
 
     def __str__(self):
-        return f"{self.name} (Attack: {self.attack}, Ability: {self.ability})"
+        return f"{self.name} (Attack: {self.attack},Defense: {self.defense} Ability: {self.ability})"
